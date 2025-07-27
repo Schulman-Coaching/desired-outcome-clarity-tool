@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Desired Outcome Clarity Tool</title>
+    <title>Time Allocation Planner</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -62,157 +63,179 @@
             height: 100%;
             transition: width 0.5s ease-in-out;
         }
-        .tip-box {
-            display: none;
-            background-color: #f0f9ff;
-            border: 1px solid #bae6fd;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            margin-top: 1rem;
+        .weeks-grid {
+            display: grid;
+            grid-template-columns: repeat(52, minmax(0, 1fr));
+            gap: 3px;
+            margin: 1.5rem auto;
+            max-width: 100%;
         }
-        .tip-toggle {
-            cursor: pointer;
-            color: #3b82f6;
-            font-weight: 500;
-            display: inline-block;
-            margin-top: 0.5rem;
+        .week-square {
+            width: 100%;
+            padding-bottom: 100%; /* Aspect ratio hack */
+            border-radius: 2px;
+        }
+        /* Calendar Grid */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 4px;
+        }
+        .calendar-day {
+            background-color: #f3f4f6;
+            border-radius: 0.25rem;
+            padding: 0.5rem;
+            min-height: 12rem;
+        }
+        .calendar-header {
+            font-weight: bold;
+            text-align: center;
+            padding-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+        .time-block {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            margin-bottom: 4px;
+            color: white;
         }
     </style>
 </head>
 <body class="text-gray-800">
 
-    <div class="container mx-auto max-w-2xl p-4 sm:p-8">
+    <div class="container mx-auto max-w-4xl p-4 sm:p-8">
         <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">Find Your Desired Outcome</h1>
-            <p class="text-lg text-gray-600">Move from a vague idea to an actionable goal.</p>
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">The 4000 Weeks Planner</h1>
+            <p class="text-lg text-gray-600">Define what's important and dedicate your most valuable resource—time—to it.</p>
         </header>
 
         <div class="bg-white p-6 sm:p-8 rounded-xl shadow-lg">
             <div id="progress-container" class="mb-8">
-                <div id="progress-bar" class="progress-bar-bg">
+                <div class="progress-bar-bg">
                     <div id="progress-bar-fill" class="progress-bar-fill" style="width: 0%;"></div>
                 </div>
             </div>
 
             <div id="wizard">
-                <!-- Step 1: The Initial Goal -->
-                <div id="step-1" class="step active">
-                    <h2 class="text-2xl font-bold mb-4">What do you want to achieve?</h2>
-                    <p class="text-gray-600 mb-6">Start with the big picture. Describe the goal or result you have in mind. Don't worry about being perfect; just get the initial thought down.</p>
-                    <textarea id="initial-goal" class="input-base" rows="3" placeholder="e.g., I want to build a successful online business."></textarea>
-                    <span class="tip-toggle" onclick="toggleTip('tip-1')">Stuck? Get a tip.</span>
-                    <div id="tip-1" class="tip-box">
-                        <h4 class="font-bold mb-2">Trick: Start with the Opposite</h4>
-                        <p class="text-sm">If you're blocked, try defining what you *don't* want. "I don't want to feel stressed about money." The opposite of that (e.g., "I want to achieve financial peace") can be a powerful starting point for a goal.</p>
+                <!-- Step 1: Memento Mori -->
+                 <div id="step-1" class="step active">
+                    <h2 class="text-2xl font-bold mb-4">Let's put your time in perspective.</h2>
+                    <p class="text-gray-600 mb-6">The average human life is about 4000 weeks long. To begin, let's visualize yours. When were you born?</p>
+                    <div class="flex items-center gap-4">
+                        <input id="birth-date" type="date" class="input-base">
+                        <button onclick="visualizeWeeks()" class="btn">Visualize</button>
                     </div>
-                    <div class="text-right mt-6">
-                        <button onclick="nextStep(2)" class="btn">Start Defining &rarr;</button>
+                    <div id="visualization-container" class="mt-6 hidden">
+                        <p class="text-center text-gray-600">Each square below represents one week of an 80-year life. The dark squares are the weeks you've already lived.</p>
+                        <div id="weeks-grid" class="weeks-grid"></div>
+                        <div id="weeks-summary" class="text-center font-medium"></div>
+                        <div class="text-right mt-6">
+                            <button onclick="nextStep(2)" class="btn">Now, What's Important? &rarr;</button>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Step 2: The "Why" -->
+                <!-- Step 2: The Goal -->
                 <div id="step-2" class="step">
-                    <h2 class="text-2xl font-bold mb-4">Why is this important to you?</h2>
-                    <p class="text-gray-600 mb-6">Understanding your core motivation is key. This 'why' will fuel your efforts when things get tough. What's the real value behind this for you?</p>
-                    <textarea id="goal-why" class="input-base" rows="3" placeholder="e.g., To have financial freedom and the flexibility to work from anywhere."></textarea>
-                    <span class="tip-toggle" onclick="toggleTip('tip-2')">Stuck? Get a tip.</span>
-                    <div id="tip-2" class="tip-box">
-                        <h4 class="font-bold mb-2">Trick: Use the "5 Whys"</h4>
-                        <p class="text-sm">If your 'why' feels superficial, dig deeper. Ask "why?" to your own answer, five times. Example: "I want more money." (1. Why?) "To feel secure." (2. Why?) "So I'm not worried about the future." ... This uncovers the true emotional core of your goal.</p>
-                    </div>
-                    <div class="flex justify-between mt-6">
+                    <h2 class="text-2xl font-bold mb-4">Seeing your time, what goal is worth investing it in?</h2>
+                    <p class="text-gray-600 mb-6">What single goal, if you made consistent progress, would have the biggest positive impact on your remaining weeks?</p>
+                    <textarea id="time-goal" class="input-base" rows="3" placeholder="e.g., Write a novel."></textarea>
+                     <div class="flex justify-between mt-6">
                         <button onclick="prevStep(1)" class="btn btn-secondary">&larr; Back</button>
                         <button onclick="nextStep(3)" class="btn">Next &rarr;</button>
                     </div>
                 </div>
-                
-                <!-- Step 3: Making it Specific -->
+
+                <!-- Step 3: Goal Actions -->
                 <div id="step-3" class="step">
-                    <h2 class="text-2xl font-bold mb-4">Let's get specific.</h2>
-                    <p class="text-gray-600 mb-6">A vague goal is hard to act on. "Success" needs a clear definition. Answering these smaller questions helps build the bigger picture.</p>
-                    <textarea id="goal-specific" class="input-base" rows="3" placeholder="e.g., Launch an e-commerce store selling handmade leather goods to customers in North America."></textarea>
-                    <span class="tip-toggle" onclick="toggleTip('tip-3')">Stuck? Get a tip.</span>
-                    <div id="tip-3" class="tip-box">
-                        <h4 class="font-bold mb-2">Trick: Who, What, Where?</h4>
-                        <p class="text-sm">Break it down with simple questions: <br>• <b>Who</b> is involved? (e.g., me, a partner, my target customers) <br>• <b>What</b> exactly am I creating/doing? (e.g., a product, a service, a skill) <br>• <b>Where</b> will this happen? (e.g., online, in a specific city)</p>
-                    </div>
-                    <div class="flex justify-between mt-6">
+                    <h2 class="text-2xl font-bold mb-4">What actions does this goal require?</h2>
+                    <p class="text-gray-600 mb-6">Break the goal down into the actual, repeatable activities you'll need to do each week. Then, estimate the hours per week for each.</p>
+                    <div id="activity-list" class="space-y-4"></div>
+                    <button onclick="addActivity()" class="mt-4 text-sm font-medium text-blue-600 hover:text-blue-800">+ Add another weekly action</button>
+                    <div class="flex justify-between mt-8">
                         <button onclick="prevStep(2)" class="btn btn-secondary">&larr; Back</button>
                         <button onclick="nextStep(4)" class="btn">Next &rarr;</button>
                     </div>
                 </div>
-
-                <!-- Step 4: Making it Measurable -->
+                
+                <!-- Step 4: Fixed Commitments -->
                 <div id="step-4" class="step">
-                    <h2 class="text-2xl font-bold mb-4">How will you measure progress?</h2>
-                    <p class="text-gray-600 mb-6">How will you know, without a doubt, that you've achieved your goal? Define clear, numeric milestones or key performance indicators (KPIs).</p>
-                    <textarea id="goal-measurable" class="input-base" rows="3" placeholder="e.g., Achieve $10,000 in monthly revenue and a 20% profit margin."></textarea>
-                     <span class="tip-toggle" onclick="toggleTip('tip-4')">Stuck? Get a tip.</span>
-                    <div id="tip-4" class="tip-box">
-                        <h4 class="font-bold mb-2">Trick: Leading vs. Lagging Indicators</h4>
-                        <p class="text-sm">Think of two types of metrics: <br>• <b>Lagging:</b> The final result (e.g., "$10k in revenue"). You can only see this after the fact. <br>• <b>Leading:</b> The daily actions that get you there (e.g., "make 5 sales calls per day"). You can control this. <br>Defining both gives you a result to aim for and actions to take.</p>
+                    <h2 class="text-2xl font-bold mb-4">Where does your time go now?</h2>
+                    <p class="text-gray-600 mb-6">Before we add your new goal, we must account for your existing, non-negotiable time commitments. Be realistic with your average weekly hours.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="sleep-hours" class="font-medium">Sleep</label>
+                            <input id="sleep-hours" type="number" class="input-base mt-1" value="56" placeholder="e.g., 56 (8h/night)">
+                        </div>
+                         <div>
+                            <label for="work-hours" class="font-medium">Work/School (including commute)</label>
+                            <input id="work-hours" type="number" class="input-base mt-1" value="45" placeholder="e.g., 45">
+                        </div>
+                         <div>
+                            <label for="chores-hours" class="font-medium">Chores, Errands & Life Admin</label>
+                            <input id="chores-hours" type="number" class="input-base mt-1" value="10" placeholder="e.g., 10">
+                        </div>
+                         <div>
+                            <label for="family-hours" class="font-medium">Family & Social Commitments</label>
+                            <input id="family-hours" type="number" class="input-base mt-1" value="15" placeholder="e.g., 15">
+                        </div>
                     </div>
                     <div class="flex justify-between mt-6">
                         <button onclick="prevStep(3)" class="btn btn-secondary">&larr; Back</button>
-                        <button onclick="nextStep(5)" class="btn">Next &rarr;</button>
+                        <button onclick="generateTimePlan()" class="btn">Visualize My Week &rarr;</button>
                     </div>
                 </div>
 
-                <!-- Step 5: Setting a Timeframe -->
+                <!-- Step 5: The Time Plan -->
                 <div id="step-5" class="step">
-                    <h2 class="text-2xl font-bold mb-4">When do you want to achieve this?</h2>
-                    <p class="text-gray-600 mb-6">A goal without a deadline is just a dream. Setting a realistic target date creates a sense of urgency and is crucial for planning your next steps.</p>
-                    <input id="goal-time" type="date" class="input-base">
-                     <span class="tip-toggle" onclick="toggleTip('tip-5')">Stuck? Get a tip.</span>
-                    <div id="tip-5" class="tip-box">
-                        <h4 class="font-bold mb-2">Trick: Work Backwards</h4>
-                        <p class="text-sm">If a big deadline feels overwhelming, break it down. If your goal is for one year from now, what must be true in 6 months for you to be on track? What about 1 month? What about next week? Focus only on the immediate, smaller deadline.</p>
-                    </div>
-                    <div class="flex justify-between mt-6">
-                        <button onclick="prevStep(4)" class="btn btn-secondary">&larr; Back</button>
-                        <button onclick="showSummary()" class="btn">See Your Outcome &rarr;</button>
-                    </div>
-                </div>
-
-                <!-- Step 6: The Final Summary -->
-                <div id="step-6" class="step">
-                    <h2 class="text-2xl font-bold mb-4">Your Desired Outcome</h2>
-                    <p class="text-gray-600 mb-6">Here is your clearly defined outcome, based on your answers. This is your north star. Keep it visible to stay focused and motivated.</p>
-                    <div id="summary" class="bg-blue-50 border border-blue-200 rounded-lg p-6 space-y-4">
-                        <div>
-                            <h3 class="font-bold text-blue-800">My Goal Is:</h3>
-                            <p id="summary-goal" class="text-gray-700"></p>
+                    <h2 class="text-2xl font-bold mb-2">Your 168-Hour Time Plan</h2>
+                    <p id="plan-goal-title" class="text-gray-600 mb-6"></p>
+                    <div id="warning-box" class="hidden my-4 p-4 bg-red-100 border border-red-300 text-red-800 rounded-lg"></div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="md:col-span-1 bg-gray-50 p-4 rounded-lg">
+                             <h3 class="font-bold text-center mb-4">Weekly Hours Breakdown</h3>
+                             <div class="h-64"><canvas id="time-chart"></canvas></div>
                         </div>
-                        <div>
-                            <h3 class="font-bold text-blue-800">Because:</h3>
-                            <p id="summary-why" class="text-gray-700"></p>
-                        </div>
-                         <div>
-                            <h3 class="font-bold text-blue-800">Success Looks Like:</h3>
-                            <p id="summary-specific" class="text-gray-700"></p>
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-blue-800">I'll Measure It By:</h3>
-                            <p id="summary-measurable" class="text-gray-700"></p>
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-blue-800">Target Date:</h3>
-                            <p id="summary-time" class="text-gray-700"></p>
+                        <div class="md:col-span-2 bg-gray-50 p-4 rounded-lg">
+                            <h3 class="font-bold mb-4">Your Goal Activities</h3>
+                            <ul id="goal-summary-list" class="list-disc list-inside space-y-2"></ul>
+                             <div class="mt-4 pt-4 border-t">
+                                <h3 class="font-bold">Total Time Investment</h3>
+                                <p><span id="total-goal-hours" class="font-bold text-2xl text-blue-600"></span> hours/week dedicated to your goal.</p>
+                                <p><span id="total-free-hours" class="font-bold text-2xl text-green-600"></span> hours/week of flexible free time.</p>
+                            </div>
                         </div>
                     </div>
-                     <div class="flex justify-between mt-6">
-                        <button onclick="prevStep(5)" class="btn btn-secondary">&larr; Back to Edit</button>
+                    <div>
+                        <h3 class="font-bold mb-4">Sample Weekly Calendar</h3>
+                        <div class="calendar-grid">
+                             <div class="calendar-header">Sun</div><div class="calendar-header">Mon</div><div class="calendar-header">Tue</div><div class="calendar-header">Wed</div><div class="calendar-header">Thu</div><div class="calendar-header">Fri</div><div class="calendar-header">Sat</div>
+                        </div>
+                         <div class="calendar-grid" id="calendar-body"></div>
+                    </div>
+                     <div class="flex justify-between mt-8">
+                        <button onclick="prevStep(4)" class="btn btn-secondary">&larr; Back to Edit</button>
                         <button onclick="startOver()" class="btn">Start Over</button>
                     </div>
                 </div>
-
             </div>
         </div>
     </div>
+    
+    <template id="activity-template">
+        <div class="flex items-center gap-4 p-2 border rounded-lg activity-row">
+            <input type="text" class="input-base activity-name" placeholder="Action (e.g., Complete one coding module)">
+            <input type="number" class="w-32 input-base activity-hours" placeholder="Hours/wk">
+            <button class="text-red-500 hover:text-red-700 font-bold" onclick="this.parentElement.remove()">X</button>
+        </div>
+    </template>
 
     <script>
         let currentStep = 1;
-        const totalSteps = 6;
+        const totalSteps = 5;
+        let timeChart = null;
+        const WEEKS_IN_LIFE = 4160; // 80 years * 52 weeks
 
         function updateProgressBar() {
             const progress = ((currentStep - 1) / (totalSteps - 1)) * 100;
@@ -220,9 +243,7 @@
         }
         
         function showStep(stepNumber) {
-            document.querySelectorAll('.step').forEach(step => {
-                step.classList.remove('active');
-            });
+            document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
             document.getElementById(`step-${stepNumber}`).classList.add('active');
             currentStep = stepNumber;
             updateProgressBar();
@@ -236,51 +257,157 @@
             showStep(stepNumber);
         }
 
-        function toggleTip(tipId) {
-            const tipBox = document.getElementById(tipId);
-            if (tipBox.style.display === 'block') {
-                tipBox.style.display = 'none';
-            } else {
-                tipBox.style.display = 'block';
+        function visualizeWeeks() {
+            const birthDateInput = document.getElementById('birth-date').value;
+            if (!birthDateInput) return;
+
+            const birthDate = new Date(birthDateInput);
+            const today = new Date();
+            
+            const msLived = today.getTime() - birthDate.getTime();
+            const weeksLived = Math.floor(msLived / (1000 * 60 * 60 * 24 * 7));
+            const weeksRemaining = WEEKS_IN_LIFE - weeksLived;
+
+            const grid = document.getElementById('weeks-grid');
+            grid.innerHTML = ''; // Clear previous grid
+            
+            for (let i = 0; i < WEEKS_IN_LIFE; i++) {
+                const weekSquare = document.createElement('div');
+                weekSquare.classList.add('week-square');
+                if (i < weeksLived) {
+                    weekSquare.classList.add('bg-gray-700');
+                } else {
+                    weekSquare.classList.add('bg-gray-300');
+                }
+                grid.appendChild(weekSquare);
             }
+
+            const summary = document.getElementById('weeks-summary');
+            summary.innerHTML = `<span class="text-gray-700 font-bold">${weeksLived}</span> weeks lived. <span class="text-gray-700 font-bold">${weeksRemaining > 0 ? weeksRemaining : 0}</span> weeks remaining (approx).`;
+
+            document.getElementById('visualization-container').classList.remove('hidden');
         }
 
-        function showSummary() {
-            const initialGoal = document.getElementById('initial-goal').value;
-            const goalWhy = document.getElementById('goal-why').value;
-            const goalSpecific = document.getElementById('goal-specific').value;
-            const goalMeasurable = document.getElementById('goal-measurable').value;
-            const goalTimeInput = document.getElementById('goal-time').value;
+        function addActivity() {
+            const template = document.getElementById('activity-template');
+            const clone = template.content.cloneNode(true);
+            document.getElementById('activity-list').appendChild(clone);
+        }
 
-            let formattedDate = 'Not set';
-            if (goalTimeInput) {
-                const dateObj = new Date(goalTimeInput + 'T00:00:00');
-                if (!isNaN(dateObj.getTime())) {
-                    formattedDate = dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        function generateTimePlan() {
+            const goal = document.getElementById('time-goal').value;
+            document.getElementById('plan-goal-title').textContent = `To achieve your goal of: "${goal || 'a worthy goal'}"`;
+
+            const activities = [];
+            let goalHours = 0;
+            document.querySelectorAll('.activity-row').forEach(row => {
+                const name = row.querySelector('.activity-name').value;
+                const hours = parseFloat(row.querySelector('.activity-hours').value) || 0;
+                if (name && hours > 0) {
+                    activities.push({ name, hours });
+                    goalHours += hours;
                 }
+            });
+
+            const sleepHours = parseFloat(document.getElementById('sleep-hours').value) || 0;
+            const workHours = parseFloat(document.getElementById('work-hours').value) || 0;
+            const choresHours = parseFloat(document.getElementById('chores-hours').value) || 0;
+            const familyHours = parseFloat(document.getElementById('family-hours').value) || 0;
+            
+            const fixedHours = sleepHours + workHours + choresHours + familyHours;
+            const totalUsedHours = fixedHours + goalHours;
+            const freeHours = 168 - totalUsedHours;
+
+            const warningBox = document.getElementById('warning-box');
+            if (totalUsedHours > 168) {
+                warningBox.textContent = `Warning: You've allocated ${totalUsedHours} hours, which is more than the 168 hours in a week. Please review your commitments.`;
+                warningBox.classList.remove('hidden');
+            } else {
+                 warningBox.classList.add('hidden');
             }
 
-            document.getElementById('summary-goal').textContent = initialGoal || 'Not provided';
-            document.getElementById('summary-why').textContent = goalWhy || 'Not provided';
-            document.getElementById('summary-specific').textContent = goalSpecific || 'Not provided';
-            document.getElementById('summary-measurable').textContent = goalMeasurable || 'Not provided';
-            document.getElementById('summary-time').textContent = formattedDate;
+            const goalSummaryList = document.getElementById('goal-summary-list');
+            goalSummaryList.innerHTML = '';
+            activities.forEach(act => {
+                const li = document.createElement('li');
+                li.textContent = `${act.name} (${act.hours} hrs/wk)`;
+                goalSummaryList.appendChild(li);
+            });
+            document.getElementById('total-goal-hours').textContent = goalHours;
+            document.getElementById('total-free-hours').textContent = freeHours < 0 ? 0 : freeHours;
 
-            showStep(6);
+            const chartCanvas = document.getElementById('time-chart');
+            if(timeChart) timeChart.destroy();
+            
+            timeChart = new Chart(chartCanvas, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Goal Work', 'Sleep', 'Work/School', 'Chores', 'Family/Social', 'Free Time'],
+                    datasets: [{
+                        data: [goalHours, sleepHours, workHours, choresHours, familyHours, freeHours < 0 ? 0 : freeHours],
+                        backgroundColor: ['#2563eb', '#374151', '#6b7280', '#9ca3af', '#d1d5db', '#10b981'],
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            generateCalendar(activities, {sleep: sleepHours, work: workHours, chores: choresHours, family: familyHours});
+            showStep(5);
+        }
+
+        function generateCalendar(goalActivities, fixedTimes) {
+            const calendarBody = document.getElementById('calendar-body');
+            calendarBody.innerHTML = '';
+            
+            const dailySleep = fixedTimes.sleep / 7;
+            const dailyWork = fixedTimes.work / 5; // Assume 5 workdays
+            const dailyFamily = fixedTimes.family / 7;
+            const dailyChores = fixedTimes.chores / 7;
+            let remainingGoalActivities = JSON.parse(JSON.stringify(goalActivities)); // Deep copy
+
+            for (let i = 0; i < 7; i++) {
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'calendar-day space-y-1';
+                
+                dayDiv.innerHTML += `<div class="time-block bg-gray-700">Sleep (~${dailySleep.toFixed(1)}h)</div>`;
+                if (i > 0 && i < 6) { // Mon-Fri
+                   dayDiv.innerHTML += `<div class="time-block bg-gray-500">Work (~${dailyWork.toFixed(1)}h)</div>`;
+                }
+                dayDiv.innerHTML += `<div class="time-block bg-gray-400">Chores (~${dailyChores.toFixed(1)}h)</div>`;
+                dayDiv.innerHTML += `<div class="time-block bg-gray-300 !text-black">Family (~${dailyFamily.toFixed(1)}h)</div>`;
+
+                if (remainingGoalActivities.length > 0) {
+                     const activity = remainingGoalActivities[0];
+                     const hoursOnDay = Math.min(activity.hours, 2); 
+                     if(hoursOnDay > 0) {
+                        dayDiv.innerHTML += `<div class="time-block bg-blue-600">${activity.name} (~${hoursOnDay.toFixed(1)}h)</div>`;
+                        activity.hours -= hoursOnDay;
+                        if (activity.hours < 0.1) {
+                            remainingGoalActivities.shift();
+                        }
+                     }
+                }
+                 calendarBody.appendChild(dayDiv);
+            }
         }
         
         function startOver() {
-            document.getElementById('initial-goal').value = '';
-            document.getElementById('goal-why').value = '';
-            document.getElementById('goal-specific').value = '';
-            document.getElementById('goal-measurable').value = '';
-            document.getElementById('goal-time').value = '';
-            document.querySelectorAll('.tip-box').forEach(box => box.style.display = 'none');
+            document.getElementById('birth-date').value = '';
+            document.getElementById('visualization-container').classList.add('hidden');
+            document.getElementById('weeks-grid').innerHTML = '';
+
+            document.getElementById('time-goal').value = '';
+            document.getElementById('activity-list').innerHTML = '';
+            addActivity(); 
             showStep(1);
         }
 
-        // Initialize
         document.addEventListener('DOMContentLoaded', () => {
+            addActivity(); 
             showStep(1);
         });
     </script>
